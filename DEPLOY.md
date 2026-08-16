@@ -20,44 +20,41 @@ Local URL:   http://localhost:8501
 Network URL: http://<your-computer's-LAN-IP>:8501
 ```
 On your phone, connected to the **same WiFi network**, open that Network URL
-in a browser. You'll hit the same password gate as the desktop version. If
-it doesn't load, Windows Firewall may be prompting (usually silently, check
-for a popup) to allow Python through on first connection -- allow it. This
-is exactly the same responsive layout the deployed site will use, so it's a
-real preview of the mobile experience, not a placeholder.
+in a browser. If it doesn't load, Windows Firewall may be prompting (usually
+silently, check for a popup) to allow Python through on first connection --
+allow it. This is exactly the same responsive layout the deployed site will
+use, so it's a real preview of the mobile experience, not a placeholder.
 
 ---
 
-## 0. Set your dashboard password (do this first -- locally too)
+## 0. Password is OPTIONAL -- the site is public by design
 
-The dashboard now fails **closed**: if no password is configured anywhere,
-it refuses to render at all (rather than silently staying open), so this
-step isn't optional even for local use. Only a salted hash is ever stored
-or compared -- the plaintext password itself is never written to disk or
-committed anywhere.
+This dashboard shows only public market data and generic backtest stats,
+nothing personal, so the default is **no password at all**: if none is
+configured anywhere, it renders normally for anyone with the link. This is
+a deliberate choice, not a placeholder step to fill in.
 
-**Generate a hash:**
+**If you deployed earlier and set `DASHBOARD_PASSWORD_HASH` on Render:**
+that variable is still there and will keep gating the live site even after
+this update, since a configured hash always re-enables the gate. To make
+it actually public, go to Render -> your service -> **Environment** and
+**delete** the `DASHBOARD_PASSWORD_HASH` variable, then let it redeploy.
+
+**If you'd rather lock it back down** (now, or any time later): generate a
+hash and set it either locally or on Render -- the gate reappears
+automatically as soon as one is configured, no code changes needed.
 ```bash
 cd spcx_reversal
 python hash_password.py
 ```
-It prompts for a password (not echoed, not saved) and prints a line like:
-```
-password_hash = "scrypt$abc123...$def456..."
-```
-
-**Locally:** copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml`
-(gitignored -- never committed or pushed) and paste that exact line in,
-replacing the placeholder.
-
-**On Render** (do this during step 3 below): Dashboard -> your service ->
-**Environment** -> add an environment variable named `DASHBOARD_PASSWORD_HASH`
-with just the hash value (the part between the quotes, no `password_hash =`
-prefix) as the value. It can be set before or after the first deploy; the
-service picks it up on next restart.
-
-The two don't have to match -- generate a separate hash and use a different
-password for local vs. live if you want.
+prints a line like `password_hash = "scrypt$abc123...$def456..."`.
+- **Locally:** copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml`
+  (gitignored -- never committed or pushed) and paste that line in.
+- **On Render:** service -> **Environment** -> add `DASHBOARD_PASSWORD_HASH`
+  with just the hash value (no `password_hash =` prefix).
+- These two are independent -- your local machine and the live site read
+  from completely separate places, so setting/removing one has zero effect
+  on the other.
 
 **Never put a real password or a real hash into `.streamlit/secrets.toml.example`**
 -- that file (unlike `secrets.toml`) is tracked by git and gets pushed to

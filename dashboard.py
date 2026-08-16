@@ -15,11 +15,13 @@ Run it
     python run_dashboard.py        (recommended -- also opens Chrome)
     streamlit run dashboard.py     (from inside this directory)
 
-This dashboard is password-gated and fails CLOSED: it will refuse to render
-at all until a password is configured. First run:
+This dashboard is PUBLIC by default -- no password needed, on purpose,
+since it shows only public market data and generic backtest stats, nothing
+personal. If you want to lock it back down:
     python hash_password.py
 then paste the printed line into a NEW .streamlit/secrets.toml (copy it from
 secrets.toml.example first). See DEPLOY.md for the deployed-site equivalent.
+The gate reappears automatically as soon as a password hash is configured.
 
 Everything -- ticker, all detection thresholds, hold-days sweep,
 auto-refresh interval -- is adjustable from the sidebar; no need to edit
@@ -99,6 +101,16 @@ SITE_NAME = "GJ Trade Analysis"
 
 st.set_page_config(page_title=SITE_NAME, layout="wide", page_icon=":chart_with_upwards_trend:")
 
+# Best-effort hint to search-engine crawlers to skip this page. NOT a real
+# guarantee -- Streamlit doesn't expose the actual <head>, so this tag lands
+# in <body>, which well-behaved crawlers mostly still honor but isn't the
+# standards-guaranteed placement. The real protection is simply that an
+# undiscoverable page (no inbound links, never submitted to search consoles)
+# won't get crawled in the first place. A true /robots.txt at the domain
+# root would need a reverse proxy in front of Streamlit -- possible to add
+# later if search-engine exclusion needs to be airtight.
+st.markdown('<meta name="robots" content="noindex, nofollow">', unsafe_allow_html=True)
+
 
 # ==========================================================================
 # COLOR SYSTEM -- one place, reused everywhere below. Values match the
@@ -176,13 +188,16 @@ def _get_secret(key: str) -> str | None:
 
 
 # ==========================================================================
-# ACCESS GATE -- fails CLOSED: if no password hash is configured, the page
-# refuses to render rather than silently staying open. Only a SALTED HASH
-# is ever stored/compared -- never the plaintext password. Generate one
-# with `python hash_password.py`, then set the printed value as either
+# ACCESS GATE -- OPT IN, not fail-closed: this dashboard is intended to be
+# publicly viewable (no sensitive/personal data, just public market data
+# and generic backtest stats), so with NO password configured it renders
+# normally, no gate at all. If you ever want to lock it back down, generate
+# a hash with `python hash_password.py` and set it as either
 # .streamlit/secrets.toml's `password_hash` (gitignored, local dev) or the
-# DASHBOARD_PASSWORD_HASH environment variable (Render/Railway, live site).
-# See DEPLOY.md for how to set each.
+# DASHBOARD_PASSWORD_HASH environment variable (Render/Railway, live site)
+# -- the gate reappears automatically as soon as one is set. Only a SALTED
+# HASH is ever stored/compared -- never the plaintext password. See
+# DEPLOY.md for details.
 # ==========================================================================
 
 _SCRYPT_N, _SCRYPT_R, _SCRYPT_P = 2 ** 14, 8, 1
@@ -235,14 +250,7 @@ def require_password() -> None:
 
     stored_hash = _configured_password_hash()
     if not stored_hash:
-        st.error(
-            "No dashboard password is configured, so access is blocked by default.\n\n"
-            "Run `python hash_password.py`, then set the printed value as "
-            "**`password_hash`** in `.streamlit/secrets.toml` (local dev) or the "
-            "**`DASHBOARD_PASSWORD_HASH`** environment variable (deployed site), then restart. "
-            "See DEPLOY.md."
-        )
-        st.stop()
+        return  # no password configured -- intentionally public, render normally
 
     st.markdown(
         f'<div style="text-align:center;margin-top:12vh;">'
