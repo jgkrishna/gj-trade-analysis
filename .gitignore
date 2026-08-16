@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+output/
+*.log
+
+# Never commit the real secrets file -- only secrets.toml.example is tracked.
+.streamlit/secrets.toml
+
+# Local SQLite reversal-history log -- runtime state, not source.
+data/
+*.db

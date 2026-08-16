@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+output/
+.git/
+.gitignore
+*.log
+
+# Never bake a local secrets file into an image -- Render/Railway get the
+# password via the DASHBOARD_PASSWORD environment variable instead.
+.streamlit/secrets.toml
+
+# Local SQLite reversal-history log -- runtime state, not source.
+data/
+*.db
